@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musical Octave Circle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* Custom styles for the body and overall layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f4f8; /* Light background */
+            margin: 0;
+            padding: 20px; /* Add some padding for smaller screens */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+            overflow: hidden; /* Prevent scrollbars if circle slightly exceeds viewport */
+        }
+
+        /* Container for the circular arrangement of buttons */
+        #circle-container {
+            position: relative;
+            width: 80vw; /* Responsive width based on viewport */
+            max-width: 500px; /* Maximum width for larger screens */
+            aspect-ratio: 1 / 1; /* Keep the container perfectly square */
+            border-radius: 50%; /* Visually define the circular area */
+            background-color: #ffffff; /* White background for the circle */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 6px rgba(0, 0, 0, 0.1); /* Deeper shadow for depth */
+            display: flex; /* Use flex to center any internal elements if needed */
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Styling for the spiraling line (SVG will be injected here) */
+        #spiral-line-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Behind note buttons */
+        }
+
+        /* Styling for each individual note button (outer and inner circles) */
+        .note-button {
+            position: absolute; /* Position buttons absolutely within the circle container */
+            width: 10%; /* Smaller width for buttons */
+            height: 10%; /* Smaller height for buttons */
+            border-radius: 50%; /* Make buttons perfectly round */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(0.6rem, 1.8vw, 1rem); /* Responsive font size */
+            font-weight: bold;
+            color: white;
+            transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+            cursor: pointer;
+            /* Transform to center the button on its calculated top/left point */
+            transform: translate(-50%, -50%);
+            user-select: none; /* Prevent text selection on rapid presses */
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+ */
+            z-index: 2; /* Ensure note buttons are above the spiral line */
+        }
+
+        .note-button:hover {
+            transform: translate(-50%, -50%) scale(1.1); /* Slight scale up on hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .note-button:active {
+            transform: translate(-50%, -50%) scale(0.9); /* Press effect */
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0.5px 1px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Bright blue for whole notes */
+        .whole-note {
+            background-color: #3b82f6; /* Tailwind: bg-blue-500 */
+        }
+        .whole-note:hover {
+            background-color: #2563eb; /* Tailwind: bg-blue-600 */
+        }
+
+        /* Dark blue for non-whole notes */
+        .non-whole-note {
+            background-color: #1a202c; /* A darker blue/almost black */
+        }
+        .non-whole-note:hover {
+            background-color: #000000; /* Pure black on hover */
+        }
+
+        /* Specific styling for the inner circle buttons */
+        .inner-circle-button {
+            width: 7%; /* Even smaller for inner circle */
+            height: 7%;
+            font-size: clamp(0.5rem, 1.5vw, 0.8rem); /* Smaller font for inner circle */
+            z-index: 3; /* Ensure inner circle buttons are above outer ones if they overlap */
+        }
+
+        /* Container for the central buttons */
+        #center-buttons-container {
+            position: absolute;
+            display: flex;
+            flex-direction: column; /* Stack vertically */
+            gap: 8px; /* Smaller space between buttons */
+            align-items: center;
+            justify-content: center;
+            /* Center the container itself */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 4; /* Ensure it's above all note buttons and the spiral line */
+        }
+
+        /* Style for the central "Stop All" button */
+        #stopButton {
+            width: 50px; /* Smaller fixed width for stop button */
+            height: 50px; /* Smaller fixed height for stop button */
+            border-radius: 0.5rem; /* Slightly rounded square */
+            background-color: #ef4444; /* Red color for stop button */
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+
+        #stopButton:hover {
+            background-color: #dc2626; /* Darker red on hover */
+            transform: scale(1.05);
+        }
+
+        #stopButton:active {
+            transform: scale(0.95);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0.5px 1px rgba(0, 0, 0, 0.04);
+        }
+
+        /* SVG icon for the stop button */
+        #stopButton svg {
+            width: 60%;
+            height: 60%;
+            fill: currentColor; /* Use button's text color */
+        }
+
+        /* Styles for the mode toggle buttons */
+        .mode-toggle-button {
+            padding: 5px 10px; /* Much smaller padding */
+            border-radius: 9999px; /* Fully rounded */
+            font-size: 0.75rem; /* Smaller font size */
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out;
+            border: 2px solid transparent;
+        }
+
+        .mode-toggle-button.active {
+            background-color: #22c55e; /* Green for active mode */
+            color: white;
+            border-color: #16a34a;
+        }
+
+        .mode-toggle-button:not(.active) {
+            background-color: #e2e8f0; /* Light gray for inactive mode */
+            color: #4a5568; /* Darker text */
+            border-color: #cbd5e0;
+        }
+
+        .mode-toggle-button:not(.active):hover {
+            background-color: #cbd5e0;
+        }
+    </style>
+</head>
+<body>
+    <div id="circle-container">
+        </div>
+
+    <script>
+        // Gemini created this:  https://gemini.google.com/app/4d19580745f5c896
+
+        // Ensure the Tone.js context is started on user interaction
+        // This is crucial for audio to play in modern browsers
+        document.documentElement.addEventListener('mousedown', () => {
+            if (Tone.context.state !== 'running') {
+                Tone.context.resume();
+                console.log("AudioContext resumed!");
+            }
+        });
+
+        let currentSynth; // Holds the active synth instance
+        let currentMode = 'piano'; // Default mode: 'piano' or 'electric-piano'
+
+        // Parameters for a Grand Piano sound
+        const pianoSynthParams = {
+            harmonicity: 1.5,
+            modulationIndex: 2,
+            oscillator: {
+                type: 'triangle'
+            },
+            envelope: {
+                attack: 0.001, // Very fast attack for immediate sound
+                decay: 0.3,   // Quick decay to initial sustain
+                sustain: 0.6, // Sustained sound while pressed
+                release: 1.0  // Natural release when button is let go
+            },
+            modulation: {
+                type: 'sine'
+            },
+            modulationEnvelope: {
+                attack: 0.01,
+                decay: 0.1,
+                sustain: 0,
+                release: 0.1
+            }
+        };
+
+        // Parameters for an electric piano with a soft voice
+        const electricPianoSynthParams = {
+            harmonicity: 2,
+            modulationIndex: 5,
+            oscillator: {
+                type: 'sine'
+            },
+            envelope: {
+                attack: 0.02,
+                decay: 0.4,
+                sustain: 0.1,
+                release: 0.8
+            },
+            modulation: {
+                type: 'triangle'
+            },
+            modulationEnvelope: {
+                attack: 0.05,
+                decay: 0.2,
+                sustain: 0.05,
+                release: 0.2
+            }
+        };
+
+
+        /**
+         * Initializes or reconfigures the Tone.js PolySynth based on the selected mode.
+         * Disposes of the previous synth instance and creates a new one with appropriate parameters.
+         * @param {string} mode - The desired sound mode ('piano' or 'electric-piano').
+         */
+        function setupSynth(mode) {
+            if (currentSynth) {
+                currentSynth.dispose(); // Clean up previous synth instance
+            }
+            if (mode === 'piano') {
+                currentSynth = new Tone.PolySynth(Tone.FMSynth, pianoSynthParams).toDestination();
+            } else { // 'electric-piano'
+                currentSynth = new Tone.PolySynth(Tone.FMSynth, electricPianoSynthParams).toDestination();
+            }
+            currentSynth.releaseAll(); // Ensure all notes are stopped when changing modes
+            console.log(`Switched to ${mode} mode.`);
+        }
+
+        // Initialize the synth with the default piano mode
+        setupSynth(currentMode);
+
+        // Define the configuration for each button, mapping notes to clock positions and labels
+        // Angles are clockwise from 12 o'clock (0 degrees at the top)
+        const buttonConfigurations = [
+            // { angle: Degrees, hour: Clock Hour, baseNote: NoteName, isWholeNote: Boolean }
+            { angle: 0,   hour: 12, baseNote: 'G#', isWholeNote: false }, // 12 o'clock
+            { angle: 30,  hour: 1,  baseNote: 'A',  isWholeNote: true },  // 1 o'clock
+            { angle: 60,  hour: 2,  baseNote: 'A#', isWholeNote: false }, // 2 o'clock
+            { angle: 90,  hour: 3,  baseNote: 'B',  isWholeNote: true },  // 3 o'clock
+            { angle: 120, hour: 4,  baseNote: 'C',  isWholeNote: true },  // 4 o'clock
+            { angle: 150, hour: 5,  baseNote: 'C#', isWholeNote: false }, // 5 o'clock
+            { angle: 180, hour: 6,  baseNote: 'D',  isWholeNote: true },  // 6 o'clock
+            { angle: 210, hour: 7,  baseNote: 'D#', isWholeNote: false }, // 7 o'clock
+            { angle: 240, hour: 8,  baseNote: 'E',  isWholeNote: true },  // 8 o'clock
+            { angle: 270, hour: 9,  baseNote: 'F',  isWholeNote: true },  // 9 o'clock
+            { angle: 300, hour: 10, baseNote: 'F#', isWholeNote: false }, // 10 o'clock
+            { angle: 330, hour: 11, baseNote: 'G',  isWholeNote: true }  // 11 o'clock
+        ];
+
+        // Mapping for whole tone notes to their solfege names (using base note names)
+        const solfegeMap = {
+            'C': 'Do',
+            'D': 'Re',
+            'E': 'Mi',
+            'F': 'Fa',
+            'G': 'Sol',
+            'A': 'La',
+            'B': 'Ti'
+        };
+
+        // Define which non-whole note hours should display a number
+        const hoursWithNumbers = [12, 2, 5, 7, 10];
+
+        const circleContainer = document.getElementById('circle-container');
+
+        // Define radius ranges for spiraling effect (adjusted for smaller buttons)
+        const outerMaxRadius = 40; // Max radius for the outer circle
+        const outerMinRadius = 28; // Min radius for the outer circle
+        const innerMaxRadius = 25; // Max radius for the inner circle
+        const innerMinRadius = 13; // Min radius for the inner circle
+
+        // Calculate step for radius decrease for each button
+        const numButtons = buttonConfigurations.length;
+        const outerRadiusStep = (outerMaxRadius - outerMinRadius) / (numButtons - 1);
+        const innerRadiusStep = (innerMaxRadius - innerMinRadius) / (numButtons - 1);
+
+        /**
+         * Determines the octave for a given base note and circle type.
+         * @param {string} baseNote - The base note name (e.g., 'C', 'G#').
+         * @param {boolean} isInnerCircle - True if for the inner circle, false for outer.
+         * @returns {number} The octave number.
+         */
+        function getOctave(baseNote, isInnerCircle) {
+            const notesOrder = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const noteIndex = notesOrder.indexOf(baseNote);
+
+            if (isInnerCircle) {
+                // Inner circle starts at G#2, changes to C3 at C
+                if (noteIndex >= notesOrder.indexOf('C')) { // C and onwards
+                    return 3;
+                } else { // G#, A, A#, B
+                    return 2;
+                }
+            } else {
+                // Outer circle starts at G#1, changes to C2 at C
+                if (noteIndex >= notesOrder.indexOf('C')) { // C and onwards
+                    return 2;
+                } else { // G#, A, A#, B
+                    return 0;
+                }
+            }
+        }
+
+        /**
+         * Creates and appends a note button to the circle container.
+         * @param {Object} config - The button configuration.
+         * @param {number} radiusPercentage - The radius for this specific button.
+         * @param {boolean} isInnerCircle - True if this is an inner circle button.
+         */
+        function createNoteButton(config, radiusPercentage, isInnerCircle) {
+            // Determine the full note value including octave
+            const octave = getOctave(config.baseNote, isInnerCircle);
+            const noteValue = isInnerCircle ? config.baseNote +  octave  
+                                            : (octave > 0) ? config.baseNote +  octave 
+                                            : config.baseNote;
+
+            // Convert degrees to radians for trigonometric functions
+            const angleRad = (config.angle - 90) * Math.PI / 180; // Adjust angle for CSS top/left (0deg is right, 90deg is down)
+
+            // Calculate the position of the button's center relative to the container's center (0,0)
+            const x = 50 + radiusPercentage * Math.cos(angleRad);
+            const y = 50 + radiusPercentage * Math.sin(angleRad);
+
+            // Create button element
+            const button = document.createElement('button');
+            button.id = `${isInnerCircle ? 'inner' : 'outer'}NoteButton-${noteValue.replace('#', 's')}`;
+            button.dataset.note = noteValue; // Store the full note value as a data attribute
+
+            // Set button text content and apply appropriate styling class
+            let buttonText = '';
+            if (config.isWholeNote) {
+                buttonText = solfegeMap[config.baseNote];
+                button.classList.add('note-button', 'whole-note');
+            } else {
+                if (hoursWithNumbers.includes(config.hour)) {
+                    buttonText = String(config.hour); // Use String(config.hour) to ensure it's a string
+                }
+                button.classList.add('note-button', 'non-whole-note');
+            }
+            button.textContent = buttonText;
+
+            if (isInnerCircle) {
+                button.classList.add('inner-circle-button');
+            }
+
+            button.style.left = `${x}%`;
+            button.style.top = `${y}%`;
+
+            // Add event listeners for note buttons
+            button.addEventListener('mousedown', () => {
+                currentSynth.triggerAttack(noteValue);
+                console.log(`Playing ${noteValue}`);
+            });
+            button.addEventListener('mouseup', () => {
+                if (currentMode === 'piano') {
+                    currentSynth.triggerRelease(noteValue);
+                    console.log(`Stopped playing ${noteValue}`);
+                }
+            });
+            button.addEventListener('mouseleave', () => {
+                if (currentMode === 'piano') {
+                    currentSynth.triggerRelease(noteValue);
+                    console.log(`Stopped playing ${noteValue} (mouse left)`);
+                }
+            });
+            button.addEventListener('touchstart', (event) => {
+                event.preventDefault();
+                currentSynth.triggerAttack(noteValue);
+                console.log(`Playing ${noteValue} via touch`);
+            });
+            button.addEventListener('touchend', (event) => {
+                event.preventDefault();
+                if (currentMode === 'piano') {
+                    currentSynth.triggerRelease(noteValue);
+                    console.log(`Stopped playing ${noteValue} via touch`);
+                }
+            });
+
+            circleContainer.appendChild(button);
+        }
+
+
+        // Dynamically create and position each outer and inner note button
+        buttonConfigurations.forEach((config, index) => {
+            // Calculate current radius for outer and inner circles
+            const currentOuterRadius = outerMaxRadius - (index * outerRadiusStep);
+            const currentInnerRadius = innerMaxRadius - (index * innerRadiusStep);
+
+            // Create outer circle button
+            createNoteButton(config, currentOuterRadius, false);
+
+            // Create inner circle button
+            createNoteButton(config, currentInnerRadius, true);
+        });
+
+        // Create and add the SVG for the spiraling line
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.id = 'spiral-line-svg';
+        svg.setAttribute("viewBox", "0 0 100 100");
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "#cbd5e0"); // Light gray color for the line
+        path.setAttribute("stroke-width", "1"); // Thin line
+        path.setAttribute("stroke-linecap", "round");
+
+        // Calculate points for the spiral path
+        const spiralLinePoints = [];
+        const numSpiralSegments = 360; // Number of points to draw the spiral smoothly
+        const spiralRadiusStart = outerMinRadius + 2; // Slightly inside outer button ring
+        const spiralRadiusEnd = innerMaxRadius - 2; // Slightly outside inner button ring
+
+        for (let i = 0; i <= numSpiralSegments; i++) {
+            const angle = (i / numSpiralSegments) * 360; // Angle from 0 to 360
+            const angleRad = (angle - 90) * Math.PI / 180; // Adjust for SVG's 0deg right, 90deg down
+
+            // Linearly interpolate the radius from start to end
+            const currentRadius = spiralRadiusStart - (i / numSpiralSegments) * (spiralRadiusStart - spiralRadiusEnd);
+
+            const x = 50 + currentRadius * Math.cos(angleRad);
+            const y = 50 + currentRadius * Math.sin(angleRad);
+            spiralLinePoints.push(`${x},${y}`);
+        }
+        path.setAttribute("d", `M ${spiralLinePoints[0]} L ${spiralLinePoints.slice(1).join(' L ')}`);
+        svg.appendChild(path);
+        circleContainer.appendChild(svg);
+
+
+        // Create the central buttons container
+        const centerButtonsContainer = document.createElement('div');
+        centerButtonsContainer.id = 'center-buttons-container';
+        circleContainer.appendChild(centerButtonsContainer);
+
+        // Create and add the central "Stop All" button
+        const stopButton = document.createElement('button');
+        stopButton.id = 'stopButton';
+        // Add an SVG icon for the stop button (a square)
+        stopButton.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="5" y="5" width="14" height="14" fill="currentColor"/>
+            </svg>
+        `;
+        stopButton.addEventListener('click', () => {
+            currentSynth.releaseAll(); // Stop all currently playing notes
+            console.log("All notes stopped.");
+        });
+        stopButton.addEventListener('touchend', (event) => {
+            event.preventDefault();
+            currentSynth.releaseAll();
+            console.log("All notes stopped via touch.");
+        });
+        centerButtonsContainer.appendChild(stopButton);
+
+
+        // Create and add the mode toggle buttons (Piano/Electric Piano)
+        const modeToggleDiv = document.createElement('div');
+        modeToggleDiv.className = 'flex gap-2'; // Tailwind for flex and gap
+        centerButtonsContainer.appendChild(modeToggleDiv);
+
+        const pianoModeButton = document.createElement('button');
+        pianoModeButton.id = 'pianoModeButton';
+        pianoModeButton.textContent = 'Piano';
+        pianoModeButton.classList.add('mode-toggle-button');
+        pianoModeButton.classList.add('active'); // Piano is default active
+        pianoModeButton.addEventListener('click', () => {
+            if (currentMode !== 'piano') {
+                currentMode = 'piano';
+                setupSynth(currentMode);
+                pianoModeButton.classList.add('active');
+                electricPianoModeButton.classList.remove('active');
+            }
+        });
+        modeToggleDiv.appendChild(pianoModeButton);
+
+        const electricPianoModeButton = document.createElement('button');
+        electricPianoModeButton.id = 'electricPianoModeButton';
+        electricPianoModeButton.textContent = 'E. Piano';
+        electricPianoModeButton.classList.add('mode-toggle-button');
+        electricPianoModeButton.addEventListener('click', () => {
+            if (currentMode !== 'electric-piano') {
+                currentMode = 'electric-piano';
+                setupSynth(currentMode);
+                electricPianoModeButton.classList.add('active');
+                pianoModeButton.classList.remove('active');
+            }
+        });
+        modeToggleDiv.appendChild(electricPianoModeButton);
+
+    </script>
+</body>
+</html>
