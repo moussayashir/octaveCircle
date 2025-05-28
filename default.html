@@ -183,8 +183,6 @@
         </div>
 
     <script>
-        // Gemini created this:  https://gemini.google.com/app/4d19580745f5c896
-
         // Ensure the Tone.js context is started on user interaction
         // This is crucial for audio to play in modern browsers
         document.documentElement.addEventListener('mousedown', () => {
@@ -268,21 +266,21 @@
         setupSynth(currentMode);
 
         // Define the configuration for each button, mapping notes to clock positions and labels
-        // Angles are clockwise from 12 o'clock (0 degrees at the top)
+        // Added outerOctave and innerOctave directly to each configuration
         const buttonConfigurations = [
-            // { angle: Degrees, hour: Clock Hour, baseNote: NoteName, isWholeNote: Boolean }
-            { angle: 0,   hour: 12, baseNote: 'G#', isWholeNote: false }, // 12 o'clock
-            { angle: 30,  hour: 1,  baseNote: 'A',  isWholeNote: true },  // 1 o'clock
-            { angle: 60,  hour: 2,  baseNote: 'A#', isWholeNote: false }, // 2 o'clock
-            { angle: 90,  hour: 3,  baseNote: 'B',  isWholeNote: true },  // 3 o'clock
-            { angle: 120, hour: 4,  baseNote: 'C',  isWholeNote: true },  // 4 o'clock
-            { angle: 150, hour: 5,  baseNote: 'C#', isWholeNote: false }, // 5 o'clock
-            { angle: 180, hour: 6,  baseNote: 'D',  isWholeNote: true },  // 6 o'clock
-            { angle: 210, hour: 7,  baseNote: 'D#', isWholeNote: false }, // 7 o'clock
-            { angle: 240, hour: 8,  baseNote: 'E',  isWholeNote: true },  // 8 o'clock
-            { angle: 270, hour: 9,  baseNote: 'F',  isWholeNote: true },  // 9 o'clock
-            { angle: 300, hour: 10, baseNote: 'F#', isWholeNote: false }, // 10 o'clock
-            { angle: 330, hour: 11, baseNote: 'G',  isWholeNote: true }  // 11 o'clock
+            // { angle: Degrees, hour: Clock Hour, baseNote: NoteName, isWholeNote: Boolean, outerOctave: Number, innerOctave: Number }
+            { angle: 0,   hour: 12, baseNote: 'G#', isWholeNote: false, outerOctave: 2, innerOctave: 3 }, // 12 o'clock (G#2 outer, G#3 inner)
+            { angle: 30,  hour: 1,  baseNote: 'A',  isWholeNote: true,  outerOctave: 2, innerOctave: 3 },  // 1 o'clock (A2 outer, A3 inner)
+            { angle: 60,  hour: 2,  baseNote: 'A#', isWholeNote: false, outerOctave: 2, innerOctave: 3 }, // 2 o'clock (A#2 outer, A#3 inner)
+            { angle: 90,  hour: 3,  baseNote: 'B',  isWholeNote: true,  outerOctave: 2, innerOctave: 3 },  // 3 o'clock (B2 outer, B3 inner)
+            { angle: 120, hour: 4,  baseNote: 'C',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 },  // 4 o'clock (C3 outer, C4 inner) - Transition point
+            { angle: 150, hour: 5,  baseNote: 'C#', isWholeNote: false, outerOctave: 3, innerOctave: 4 }, // 5 o'clock (C#3 outer, C#4 inner)
+            { angle: 180, hour: 6,  baseNote: 'D',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 },  // 6 o'clock (D3 outer, D4 inner)
+            { angle: 210, hour: 7,  baseNote: 'D#', isWholeNote: false, outerOctave: 3, innerOctave: 4 }, // 7 o'clock (D#3 outer, D#4 inner)
+            { angle: 240, hour: 8,  baseNote: 'E',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 },  // 8 o'clock (E3 outer, E4 inner)
+            { angle: 270, hour: 9,  baseNote: 'F',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 },  // 9 o'clock (F3 outer, F4 inner)
+            { angle: 300, hour: 10, baseNote: 'F#', isWholeNote: false, outerOctave: 3, innerOctave: 4 }, // 10 o'clock (F#3 outer, F#4 inner)
+            { angle: 330, hour: 11, baseNote: 'G',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 }  // 11 o'clock (G3 outer, G4 inner)
         ];
 
         // Mapping for whole tone notes to their solfege names (using base note names)
@@ -313,44 +311,15 @@
         const innerRadiusStep = (innerMaxRadius - innerMinRadius) / (numButtons - 1);
 
         /**
-         * Determines the octave for a given base note and circle type.
-         * @param {string} baseNote - The base note name (e.g., 'C', 'G#').
-         * @param {boolean} isInnerCircle - True if for the inner circle, false for outer.
-         * @returns {number} The octave number.
-         */
-        function getOctave(baseNote, isInnerCircle) {
-            const notesOrder = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-            const noteIndex = notesOrder.indexOf(baseNote);
-
-            if (isInnerCircle) {
-                // Inner circle starts at G#2, changes to C3 at C
-                if (noteIndex >= notesOrder.indexOf('C')) { // C and onwards
-                    return 3;
-                } else { // G#, A, A#, B
-                    return 2;
-                }
-            } else {
-                // Outer circle starts at G#1, changes to C2 at C
-                if (noteIndex >= notesOrder.indexOf('C')) { // C and onwards
-                    return 2;
-                } else { // G#, A, A#, B
-                    return 0;
-                }
-            }
-        }
-
-        /**
          * Creates and appends a note button to the circle container.
          * @param {Object} config - The button configuration.
          * @param {number} radiusPercentage - The radius for this specific button.
          * @param {boolean} isInnerCircle - True if this is an inner circle button.
          */
         function createNoteButton(config, radiusPercentage, isInnerCircle) {
-            // Determine the full note value including octave
-            const octave = getOctave(config.baseNote, isInnerCircle);
-            const noteValue = isInnerCircle ? config.baseNote +  octave  
-                                            : (octave > 0) ? config.baseNote +  octave 
-                                            : config.baseNote;
+            // Determine the full note value including octave directly from config
+            const octave = isInnerCircle ? config.innerOctave : config.outerOctave;
+            const noteValue = config.baseNote + octave;
 
             // Convert degrees to radians for trigonometric functions
             const angleRad = (config.angle - 90) * Math.PI / 180; // Adjust angle for CSS top/left (0deg is right, 90deg is down)
