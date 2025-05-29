@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circle Sliced Between Hours</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f4f8; /* Light background */
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        canvas {
+            display: block;
+            border: 2px solid #334155; /* Darker border */
+            border-radius: 1rem; /* Rounded corners for the canvas */
+            background-color: #ffffff; /* White canvas background */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+            max-width: 90vw; /* Max width relative to viewport */
+            max-height: 90vh; /* Max height relative to viewport */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="hourCircleCanvas"></canvas>
+
+    <script>
+        // Get the canvas element and its 2D rendering context
+        const canvas = document.getElementById('hourCircleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /**
+         * Draws the circle with 12 hour slices, with lines between the hours,
+         * and fills alternating segments with light gray.
+         */
+        function drawCircle() {
+            // Clear the entire canvas before redrawing
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate the center coordinates of the canvas
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            // Determine the radius based on the smaller dimension of the canvas,
+            // leaving some padding (e.g., 10% of the smaller dimension)
+            const padding = Math.min(canvas.width, canvas.height) * 0.1;
+            const radius = (Math.min(canvas.width, canvas.height) / 2) - padding;
+
+            // Set line properties for drawing the segment separators
+            ctx.strokeStyle = '#64748b'; // Slate gray for lines
+            ctx.lineWidth = 2;
+
+            // Draw the main outer circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.closePath();
+
+            // Each segment represents 30 degrees (360 degrees / 12 segments)
+            const angleIncrement = (Math.PI * 2) / 12; // Angle in radians for each segment (30 degrees)
+
+            // Pre-calculate the angles of the dividing lines.
+            // These lines are positioned *between* the hours.
+            // The angle is calculated relative to the positive x-axis, then adjusted
+            // so that 12 o'clock is at the top (-Math.PI / 2).
+            const lineAngles = [];
+            for (let i = 0; i < 12; i++) {
+                // Angle for the line between hour 'i' and 'i+1' (e.g., i=0 is 12-1, i=11 is 11-12)
+                // We add half of the angleIncrement to shift the line to be *between* the hours.
+                lineAngles.push((i * angleIncrement + angleIncrement / 2) - (Math.PI / 2));
+            }
+
+            // Fill alternating segments
+            for (let i = 0; i < 12; i++) {
+                // 'i' here represents the segment index (0 for the segment around 12 o'clock,
+                // 1 for the segment around 1 o'clock, etc.)
+
+                // The start angle for segment 'i' is the line angle for the "previous" hour's boundary.
+                // For segment 0 (around 12 o'clock), its start boundary is the line between 11 and 12.
+                // We use (i - 1 + 12) % 12 to correctly wrap around for the first segment.
+                const startAngleIndex = (i - 1 + 12) % 12;
+                const startAngle = lineAngles[startAngleIndex];
+
+                // The end angle for segment 'i' is the line angle for its "current" hour's boundary.
+                // For segment 0 (around 12 o'clock), its end boundary is the line between 12 and 1.
+                const endAngle = lineAngles[i];
+
+                if (i % 2 === 0) { // Check if it's an even-indexed segment (0, 2, 4, etc.)
+                    ctx.fillStyle = '#e2e8f0'; // Light gray color (Tailwind's slate-200)
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY); // Start from the center
+                    ctx.arc(centerX, centerY, radius, startAngle, endAngle); // Draw the arc
+                    ctx.closePath(); // Close the path back to the center to form a pie slice
+                    ctx.fill(); // Fill the segment
+                }
+            }
+
+            // Redraw the separating lines *on top* of the filled segments
+            // This ensures the lines are always visible and crisp over the filled areas.
+            for (let i = 0; i < 12; i++) {
+                // Use the pre-calculated line angles for drawing the lines
+                const angle = lineAngles[i];
+
+                // Calculate the end point of the line on the circle's circumference
+                const endX = centerX + radius * Math.cos(angle);
+                const endY = centerY + radius * Math.sin(angle);
+
+                // Draw a line from the center to the circumference
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY); // Start at the center
+                ctx.lineTo(endX, endY);     // Draw to the circumference
+                ctx.stroke();
+                ctx.closePath();
+            }
+        }
+
+        /**
+         * Resizes the canvas to fit the window and redraws the circle.
+         */
+        function resizeCanvas() {
+            // Set canvas dimensions to match the window's inner dimensions
+            // This makes the canvas responsive
+            canvas.width = window.innerWidth * 0.8; // Use 80% of window width
+            canvas.height = window.innerHeight * 0.8; // Use 80% of window height
+
+            // Ensure the canvas is square to maintain circular shape
+            const size = Math.min(canvas.width, canvas.height);
+            canvas.width = size;
+            canvas.height = size;
+
+            // Redraw the circle with the new dimensions
+            drawCircle();
+        }
+
+        // Initial draw when the window loads
+        window.onload = function() {
+            resizeCanvas(); // Set initial size and draw
+        };
+
+        // Redraw the circle whenever the window is resized
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+</html>
