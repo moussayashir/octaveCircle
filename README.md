@@ -3,6 +3,10 @@ New type of musical keyboard interface
 
 The UX is responsive. 
 
+![image](https://github.com/user-attachments/assets/5a09da9d-6f12-4ddc-b85b-2db3af3161b5)
+
+
+
 1. **Clockface background:**     
 1.1 The background is a circle, with 12 very thin (1 px) radial lines, creating 12 "slices".     
 1.2 The radial lines are between the hours rather than on the hours.    
