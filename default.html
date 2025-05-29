@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Musical Octave Circle</title>
+    <title>Musical Octave Circle Interface</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <style>
@@ -35,7 +35,27 @@
             align-items: center;
         }
 
-        /* Styling for the spiraling line (SVG will be injected here) */
+        /* Styling for the background slices and lines (SVG will be injected here) */
+        #background-slices-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0; /* Behind all other elements */
+        }
+
+        /* Styling for the concentric circles (SVG will be injected here) */
+        #concentric-circles-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0.5; /* Between background slices and spiral line */
+        }
+
+        /* Styling for the spiral line (SVG will be injected here) */
         #spiral-line-svg {
             position: absolute;
             top: 0;
@@ -45,18 +65,27 @@
             z-index: 1; /* Behind note buttons */
         }
 
-        /* Styling for each individual note button (outer and inner circles) */
+        /* Styling for chord lines (SVG will be injected here) */
+        #chord-lines-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1.5; /* Between spiral line and note buttons */
+        }
+
+        /* Styling for each individual note button */
         .note-button {
             position: absolute; /* Position buttons absolutely within the circle container */
-            width: 7%; /* Adjusted for smaller size */
-            height: 7%; /* Adjusted for smaller size */
+            width: 7%; /* Responsive size */
+            height: 7%; /* Responsive size */
             border-radius: 50%; /* Make buttons perfectly round */
             display: flex;
+            flex-direction: column; /* Stack text vertically */
             justify-content: center;
             align-items: center;
-            font-size: clamp(0.5rem, 1.5vw, 0.8rem); /* Adjusted for smaller font size */
             font-weight: bold;
-            color: white;
             transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* Subtle shadow */
             cursor: pointer;
@@ -66,7 +95,11 @@
             -webkit-user-select: none; /* Safari */
             -moz-user-select: none; /* Firefox */
             -ms-user-select: none; /* IE10+ */
-            z-index: 2; /* Ensure note buttons are above the spiral line */
+            z-index: 2; /* Ensure note buttons are above lines */
+            line-height: 1; /* Compact line height for text */
+            padding: 2px; /* Small padding inside buttons */
+            box-sizing: border-box; /* Include padding in button size */
+            text-align: center;
         }
 
         .note-button:hover {
@@ -79,43 +112,99 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0.5px 1px rgba(0, 0, 0, 0.04);
         }
 
-        /* Bright blue for whole notes */
-        .whole-note {
-            background-color: #3b82f6; /* Tailwind: bg-blue-500 */
+        /* Natural notes: Light blue buttons with dark blue text */
+        .note-button.natural {
+            background-color: #93c5fd; /* Tailwind: bg-blue-300 */
+            color: #1e40af; /* Tailwind: text-blue-800 */
         }
-        .whole-note:hover {
-            background-color: #2563eb; /* Tailwind: bg-blue-600 */
-        }
-
-        /* Dark blue for non-whole notes */
-        .non-whole-note {
-            background-color: #1a202c; /* A darker blue/almost black */
-        }
-        .non-whole-note:hover {
-            background-color: #000000; /* Pure black on hover */
+        .note-button.natural:hover {
+            background-color: #60a5fa; /* Tailwind: bg-blue-400 */
         }
 
-        /* Container for the central buttons */
+        /* Sharp notes: Navy blue buttons with white text */
+        .note-button.sharp {
+            background-color: #1e3a8a; /* Tailwind: bg-blue-900 */
+            color: white;
+        }
+        .note-button.sharp:hover {
+            background-color: #172554; /* Tailwind: bg-blue-950 */
+        }
+
+        .note-button .top-text {
+            font-size: clamp(0.4rem, 1.2vw, 0.6rem); /* Smaller font for octave.hour */
+        }
+        .note-button .bottom-text {
+            font-size: clamp(0.5rem, 1.5vw, 0.8rem); /* Larger font for solfege */
+        }
+
+        /* Chord buttons */
+        .chord-button {
+            position: absolute;
+            width: 20px; /* Tiny buttons */
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.6rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 5; /* Above note buttons */
+            transition: background-color 0.1s ease-in-out;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .chord-button.major {
+            background-color: #34d399; /* Greenish for major */
+            color: white;
+            right: -10px; /* Position to the right of the note button */
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .chord-button.minor {
+            background-color: #f87171; /* Reddish for minor */
+            color: white;
+            left: -10px; /* Position to the left of the note button */
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Container for the central control buttons */
         #center-buttons-container {
             position: absolute;
             display: flex;
             flex-direction: column; /* Stack vertically */
-            gap: 8px; /* Smaller space between buttons */
+            gap: 8px; /* Space between buttons */
             align-items: center;
             justify-content: center;
             /* Center the container itself */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 4; /* Ensure it's above all note buttons and the spiral line */
+            z-index: 4; /* Ensure it's above all note buttons and lines */
+        }
+
+        /* Style for the white circle behind central buttons */
+        #center-circle-background {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px; /* Fixed size */
+            height: 100px; /* Fixed size */
+            border-radius: 50%;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+            z-index: 3; /* Between background slices (0) and control buttons (4) */
         }
 
         /* Style for the central "Stop All" button */
         #stopButton {
-            width: 50px; /* Smaller fixed width for stop button */
-            height: 50px; /* Smaller fixed height for stop button */
-            border-radius: 0.5rem; /* Slightly rounded square */
-            background-color: #ef4444; /* Red color for stop button */
+            width: 25px; /* Small circular button */
+            height: 25px;
+            border-radius: 50%; /* Circular */
+            background-color: #ef4444; /* Red color */
             color: white;
             display: flex;
             justify-content: center;
@@ -123,6 +212,7 @@
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
             transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+            padding: 0; /* Remove default padding */
         }
 
         #stopButton:hover {
@@ -142,42 +232,95 @@
             fill: currentColor; /* Use button's text color */
         }
 
-        /* Styles for the mode toggle buttons */
+        /* Styles for the mode toggle buttons (Perc/Sust) */
         .mode-toggle-button {
-            padding: 5px 10px; /* Much smaller padding */
-            border-radius: 9999px; /* Fully rounded */
+            width: 30px; /* Fixed width for small radio buttons */
+            height: 30px; /* Fixed height for small radio buttons */
+            border-radius: 50%; /* Circular */
             font-size: 0.75rem; /* Smaller font size */
             font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out;
-            border: 2px solid transparent;
+            transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out, border-color 0.1s ease-in-out;
+            border: 2px solid transparent; /* Default transparent border */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0; /* Remove default padding */
         }
 
         .mode-toggle-button.active {
-            background-color: #22c55e; /* Green for active mode */
             color: white;
-            border-color: #16a34a;
+            border-color: #16a34a; /* Darker green border for active */
         }
 
-        .mode-toggle-button:not(.active) {
-            background-color: #e2e8f0; /* Light gray for inactive mode */
-            color: #4a5568; /* Darker text */
-            border-color: #cbd5e0;
+        .mode-toggle-button.perc {
+            background-color: #3b82f6; /* Blue for Perc */
+        }
+        .mode-toggle-button.perc.active {
+            background-color: #2563eb; /* Darker blue when active */
+        }
+        .mode-toggle-button.perc:not(.active) {
+            background-color: #bfdbfe; /* Light blue when inactive */
+            color: #1e40af; /* Dark blue text */
         }
 
-        .mode-toggle-button:not(.active):hover {
+        .mode-toggle-button.sust {
+            background-color: #22c55e; /* Green for Sust */
+        }
+        .mode-toggle-button.sust.active {
+            background-color: #16a34a; /* Darker green when active */
+        }
+        .mode-toggle-button.sust:not(.active) {
+            background-color: #bbf7d0; /* Light green when inactive */
+            color: #16a34a; /* Dark green text */
+        }
+
+        /* Chords mode toggle button in top right */
+        #chord-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 15px;
+            border-radius: 9999px; /* Pill shape */
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+            z-index: 10; /* Ensure it's on top */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        #chord-mode-toggle.active {
+            background-color: #8b5cf6; /* Purple when active */
+            color: white;
+        }
+
+        #chord-mode-toggle:not(.active) {
+            background-color: #e2e8f0; /* Light gray when inactive */
+            color: #4a5568;
+        }
+        #chord-mode-toggle:not(.active):hover {
             background-color: #cbd5e0;
         }
+
     </style>
 </head>
 <body>
     <div id="circle-container">
+        <div id="center-circle-background"></div>
         </div>
+
+    <button id="chord-mode-toggle">Chords OFF</button>
 
     <script>
         // Ensure the Tone.js context is started on user interaction
-        // This is crucial for audio to play in modern browsers
         document.documentElement.addEventListener('mousedown', () => {
+            if (Tone.context.state !== 'running') {
+                Tone.context.resume();
+                console.log("AudioContext resumed!");
+            }
+        });
+        document.documentElement.addEventListener('touchstart', () => {
             if (Tone.context.state !== 'running') {
                 Tone.context.resume();
                 console.log("AudioContext resumed!");
@@ -185,136 +328,131 @@
         });
 
         let currentSynth; // Holds the active synth instance
-        let currentMode = 'piano'; // Default mode: 'piano' or 'electric-piano'
+        let currentMode = 'perc'; // Default mode: 'perc' or 'sust'
+        let chordModeOn = false; // State for chord mode
 
-        // Parameters for a Grand Piano sound
-        const pianoSynthParams = {
-            harmonicity: 1.5,
-            modulationIndex: 2,
-            oscillator: {
-                type: 'triangle'
-            },
+        // Tone.js Synth configurations
+        // Percussive (Piano-like) Synth
+        const percSynthParams = {
+            oscillator: { type: 'sine' },
             envelope: {
-                attack: 0.001, // Very fast attack for immediate sound
-                decay: 0.3,   // Quick decay to initial sustain
-                sustain: 0.6, // Sustained sound while pressed
-                release: 1.0  // Natural release when button is let go
-            },
-            modulation: {
-                type: 'sine'
-            },
-            modulationEnvelope: {
-                attack: 0.01,
-                decay: 0.1,
-                sustain: 0,
-                release: 0.1
+                attack: 0.005,
+                decay: 0.2, // Slightly longer decay
+                sustain: 0,   // No sustain while held, relies on duration
+                release: 0.5  // Fade out after duration
             }
         };
 
-        // Parameters for an electric piano with a soft voice
-        const electricPianoSynthParams = {
-            harmonicity: 2,
-            modulationIndex: 5,
-            oscillator: {
-                type: 'sine'
-            },
+        // Sustained (Oboe/Strings-like) Synth
+        const sustSynthParams = {
+            oscillator: { type: 'sawtooth' }, // Sawtooth for richer, string-like sound
             envelope: {
-                attack: 0.02,
-                decay: 0.4,
-                sustain: 0.1,
-                release: 0.8
-            },
-            modulation: {
-                type: 'triangle'
-            },
-            modulationEnvelope: {
-                attack: 0.05,
-                decay: 0.2,
-                sustain: 0.05,
-                release: 0.2
+                attack: 0.5, // Slower attack for sustained feel
+                decay: 0.8,
+                sustain: 0.7, // High sustain for continuous sound
+                release: 1.5 // Longer release
             }
         };
-
 
         /**
          * Initializes or reconfigures the Tone.js PolySynth based on the selected mode.
          * Disposes of the previous synth instance and creates a new one with appropriate parameters.
-         * @param {string} mode - The desired sound mode ('piano' or 'electric-piano').
+         * @param {string} mode - The desired sound mode ('perc' or 'sust').
          */
         function setupSynth(mode) {
             if (currentSynth) {
                 currentSynth.dispose(); // Clean up previous synth instance
             }
-            if (mode === 'piano') {
-                currentSynth = new Tone.PolySynth(Tone.FMSynth, pianoSynthParams).toDestination();
-            } else { // 'electric-piano'
-                currentSynth = new Tone.PolySynth(Tone.FMSynth, electricPianoSynthParams).toDestination();
+            if (mode === 'perc') {
+                currentSynth = new Tone.PolySynth(Tone.Synth, percSynthParams).toDestination();
+                console.log("Switched to Percussive mode.");
+            } else { // 'sust'
+                currentSynth = new Tone.PolySynth(Tone.Synth, sustSynthParams).toDestination();
+                console.log("Switched to Sustained mode.");
             }
             currentSynth.releaseAll(); // Ensure all notes are stopped when changing modes
-            console.log(`Switched to ${mode} mode.`);
         }
 
-        // Initialize the synth with the default piano mode
+        // Initialize the synth with the default percussive mode
         setupSynth(currentMode);
 
-        // Define the configuration for each button, mapping notes to clock positions and labels
-        // Added outerOctave and innerOctave directly to each configuration
-        const buttonConfigurations = [
-            // { angle: Degrees, hour: Clock Hour, baseNote: NoteName, isWholeNote: Boolean, outerOctave: Number, innerOctave: Number }
-            { angle: 0,   hour: 12, baseNote: 'G#', isWholeNote: false, outerOctave: 2, innerOctave: 3 }, // 12 o'clock (G#2 outer, G#3 inner)
-            { angle: 30,  hour: 1,  baseNote: 'A',  isWholeNote: true,  outerOctave: 2, innerOctave: 3 },  // 1 o'clock (A2 outer, A3 inner)
-            { angle: 60,  hour: 2,  baseNote: 'A#', isWholeNote: false, outerOctave: 2, innerOctave: 3 }, // 2 o'clock (A#2 outer, A#3 inner)
-            { angle: 90,  hour: 3,  baseNote: 'B',  isWholeNote: true,  outerOctave: 2, innerOctave: 3 },  // 3 o'clock (B2 outer, B3 inner)
-            { angle: 120, hour: 4,  baseNote: 'C',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 },  // 4 o'clock (C3 outer, C4 inner) - Transition point
-            { angle: 150, hour: 5,  baseNote: 'C#', isWholeNote: false, outerOctave: 3, innerOctave: 4 }, // 5 o'clock (C#3 outer, C#4 inner)
-            { angle: 180, hour: 6,  baseNote: 'D',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 },  // 6 o'clock (D3 outer, D4 inner)
-            { angle: 210, hour: 7,  baseNote: 'D#', isWholeNote: false, outerOctave: 3, innerOctave: 4 }, // 7 o'clock (D#3 outer, D#4 inner)
-            { angle: 240, hour: 8,  baseNote: 'E',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 },  // 8 o'clock (E3 outer, E4 inner)
-            { angle: 270, hour: 9,  baseNote: 'F',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 },  // 9 o'clock (F3 outer, F4 inner)
-            { angle: 300, hour: 10, baseNote: 'F#', isWholeNote: false, outerOctave: 3, innerOctave: 4 }, // 10 o'clock (F#3 outer, F#4 inner)
-            { angle: 330, hour: 11, baseNote: 'G',  isWholeNote: true,  outerOctave: 3, innerOctave: 4 }  // 11 o'clock (G3 outer, G4 inner)
+        const INITIAL_OCTAVE = 3; // MODIFIED: Starting octave for the first set of notes changed to 3
+
+        // Define the base notes and their properties
+        const baseNoteConfigurations = [
+            // { baseNote: NoteName, isNatural: Boolean, hour: Clock Hour }
+            { baseNote: 'A',  isNatural: true,  hour: 1 },
+            { baseNote: 'A#', isNatural: false, hour: 2 },
+            { baseNote: 'B',  isNatural: true,  hour: 3 },
+            { baseNote: 'C',  isNatural: true,  hour: 4 },
+            { baseNote: 'C#', isNatural: false, hour: 5 },
+            { baseNote: 'D',  isNatural: true,  hour: 6 },
+            { baseNote: 'D#', isNatural: false, hour: 7 },
+            { baseNote: 'E',  isNatural: true,  hour: 8 },
+            { baseNote: 'F',  isNatural: true,  hour: 9 },
+            { baseNote: 'F#', isNatural: false, hour: 10 },
+            { baseNote: 'G',  isNatural: true,  hour: 11 },
+            { baseNote: 'G#', isNatural: false, hour: 12 }
         ];
 
-        // Mapping for whole tone notes to their solfege names (using base note names)
+        // Mapping for natural notes to their solfege names
         const solfegeMap = {
-            'C': 'Do',
-            'D': 'Re',
-            'E': 'Mi',
-            'F': 'Fa',
-            'G': 'Sol',
-            'A': 'La',
-            'B': 'Ti'
+            'C': 'Do', 'D': 'Re', 'E': 'Mi', 'F': 'Fa', 'G': 'Sol', 'A': 'La', 'B': 'Ti'
         };
 
-        // Define which non-whole note hours should display a number
-        const hoursWithNumbers = [12, 2, 5, 7, 10];
-
         const circleContainer = document.getElementById('circle-container');
+        const allNoteButtons = {}; // Store references to all note buttons for chord logic
 
-        // Define radius ranges for spiraling effect (adjusted to move buttons further out)
-        const outerMaxRadius = 45; // Increased for further out
-        const outerMinRadius = 33; // Increased for further out
-        const innerMaxRadius = 30; // Increased for further out
-        const innerMinRadius = 18; // Increased for further out
+        // Define radius ranges for spiraling effect for each octave
+        // Octave 2 (closer to center)
+        const octave2MaxRadius = 30; // Start closer
+        const octave2MinRadius = 20; // End closer
+        // Octave 3 (further from center)
+        const octave3MaxRadius = 45; // Start further
+        const octave3MinRadius = 35; // End further
 
-        // Calculate step for radius decrease for each button
-        const numButtons = buttonConfigurations.length;
-        const outerRadiusStep = (outerMaxRadius - outerMinRadius) / (numButtons - 1);
-        const innerRadiusStep = (innerMaxRadius - innerMinRadius) / (numButtons - 1);
+        // Calculate step for radius increase for each button within an octave
+        const numNotesPerOctave = baseNoteConfigurations.length;
+        const octave2RadiusStep = (octave2MaxRadius - octave2MinRadius) / (numNotesPerOctave - 1);
+        const octave3RadiusStep = (octave3MaxRadius - octave3MinRadius) / (numNotesPerOctave - 1);
+
+        /**
+         * Calculates the full note string (e.g., "C4") based on base note and octave.
+         * Handles the octave transition from B to C.
+         * @param {string} baseNote - The base note (e.g., 'A', 'C#').
+         * @param {number} initialOctave - The starting octave for the current set of 12 notes.
+         * @returns {string} The full note string with correct octave.
+         */
+        function getFullNote(baseNote, initialOctave) {
+            // Notes from C onwards in the chromatic scale increment the octave
+            const notesRequiringOctaveIncrement = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#'];
+            let actualOctave = initialOctave;
+            if (notesRequiringOctaveIncrement.includes(baseNote)) {
+                actualOctave = initialOctave + 1;
+            }
+            return baseNote + actualOctave;
+        }
 
         /**
          * Creates and appends a note button to the circle container.
-         * @param {Object} config - The button configuration.
-         * @param {number} radiusPercentage - The radius for this specific button.
-         * @param {boolean} isInnerCircle - True if this is an inner circle button.
+         * @param {Object} config - The base note configuration.
+         * @param {number} octaveIndex - 0 for INITIAL_OCTAVE, 1 for INITIAL_OCTAVE + 1.
          */
-        function createNoteButton(config, radiusPercentage, isInnerCircle) {
-            // Determine the full note value including octave directly from config
-            const octave = isInnerCircle ? config.innerOctave : config.outerOctave;
-            const noteValue = config.baseNote + octave;
+        function createNoteButton(config, octaveIndex) {
+            const currentOctave = INITIAL_OCTAVE + octaveIndex;
+            const fullNote = getFullNote(config.baseNote, currentOctave);
 
-            // Convert degrees to radians for trigonometric functions
-            const angleRad = (config.angle - 90) * Math.PI / 180; // Adjust angle for CSS top/left (0deg is right, 90deg is down)
+            let radiusPercentage;
+            if (octaveIndex === 0) { // Inner octave (INITIAL_OCTAVE)
+                radiusPercentage = octave2MinRadius + (baseNoteConfigurations.indexOf(config) * octave2RadiusStep);
+            } else { // Outer octave (INITIAL_OCTAVE + 1)
+                radiusPercentage = octave3MinRadius + (baseNoteConfigurations.indexOf(config) * octave3RadiusStep);
+            }
+
+            // Convert hour to angle (1 o'clock is 30 degrees, 12 o'clock is 360/0 degrees)
+            // Adjust angle for CSS top/left (0deg is right, 90deg is down)
+            const angleDeg = (config.hour % 12) * 30; // 12 o'clock is 0, 1 o'clock is 30, etc.
+            const angleRad = (angleDeg - 90) * Math.PI / 180;
 
             // Calculate the position of the button's center relative to the container's center (0,0)
             const x = 50 + radiusPercentage * Math.cos(angleRad);
@@ -322,175 +460,530 @@
 
             // Create button element
             const button = document.createElement('button');
-            button.id = `${isInnerCircle ? 'inner' : 'outer'}NoteButton-${noteValue.replace('#', 's')}`;
-            button.dataset.note = noteValue; // Store the full note value as a data attribute
+            button.id = `noteButton-${fullNote.replace('#', 's')}`; // e.g., noteButton-As2, noteButton-C3
+            button.dataset.note = fullNote; // Store the full note value as a data attribute
+            button.dataset.octave = currentOctave;
+            button.dataset.isNatural = config.isNatural;
+            button.dataset.hour = config.hour;
 
-            // Set button text content and apply appropriate styling class
-            let buttonText = '';
-            if (config.isWholeNote) {
-                buttonText = solfegeMap[config.baseNote];
-            } else {
-                if (hoursWithNumbers.includes(config.hour)) {
-                    buttonText = String(config.hour); // Use String(config.hour) to ensure it's a string
-                }
-            }
             button.classList.add('note-button');
-            // Apply color based on whether it's a whole note or not
-            if (config.isWholeNote) {
-                button.classList.add('whole-note');
-            } else {
-                button.classList.add('non-whole-note');
+            button.classList.add(config.isNatural ? 'natural' : 'sharp');
+
+            // Set button text content
+            let topText = `${fullNote.slice(-1)}.${config.hour}`; // Octave.Hour
+            let bottomText = '';
+            if (config.isNatural) {
+                bottomText = solfegeMap[config.baseNote];
             }
-            button.textContent = buttonText;
+            button.innerHTML = `<span class="top-text">${topText}</span><span class="bottom-text">${bottomText}</span>`;
 
             button.style.left = `${x}%`;
             button.style.top = `${y}%`;
 
             // Add event listeners for note buttons
             button.addEventListener('mousedown', () => {
-                currentSynth.triggerAttack(noteValue);
-                console.log(`Playing ${noteValue}`);
+                if (currentMode === 'perc') {
+                    currentSynth.triggerAttackRelease(fullNote, '1s'); // Play for 1 second and release
+                } else { // 'sust' mode
+                    currentSynth.triggerAttack(fullNote);
+                }
+                console.log(`Playing ${fullNote}`);
             });
             button.addEventListener('mouseup', () => {
-                if (currentMode === 'piano') {
-                    currentSynth.triggerRelease(noteValue);
-                    console.log(`Stopped playing ${noteValue}`);
+                if (currentMode === 'sust') { // Only release on mouseup in sustained mode
+                    currentSynth.triggerRelease(fullNote);
+                    console.log(`Stopped playing ${fullNote}`);
                 }
             });
             button.addEventListener('mouseleave', () => {
-                if (currentMode === 'piano') {
-                    currentSynth.triggerRelease(noteValue);
-                    console.log(`Stopped playing ${noteValue} (mouse left)`);
+                if (currentMode === 'sust') { // Only release on mouseleave in sustained mode
+                    currentSynth.triggerRelease(fullNote);
+                    console.log(`Stopped playing ${fullNote} (mouse left)`);
                 }
             });
             button.addEventListener('touchstart', (event) => {
                 event.preventDefault();
-                currentSynth.triggerAttack(noteValue);
-                console.log(`Playing ${noteValue} via touch`);
+                if (currentMode === 'perc') {
+                    currentSynth.triggerAttackRelease(fullNote, '1s'); // Play for 1 second and release
+                } else { // 'sust' mode
+                    currentSynth.triggerAttack(fullNote);
+                }
+                console.log(`Playing ${fullNote} via touch`);
             });
             button.addEventListener('touchend', (event) => {
                 event.preventDefault();
-                if (currentMode === 'piano') {
-                    currentSynth.triggerRelease(noteValue);
-                    console.log(`Stopped playing ${noteValue} via touch`);
+                if (currentMode === 'sust') { // Only release on touchend in sustained mode
+                    currentSynth.triggerRelease(fullNote);
+                    console.log(`Stopped playing ${fullNote} via touch`);
                 }
             });
 
             circleContainer.appendChild(button);
+            allNoteButtons[fullNote] = button; // Store reference
         }
 
-
-        // Dynamically create and position each outer and inner note button
-        buttonConfigurations.forEach((config, index) => {
-            // Calculate current radius for outer and inner circles
-            const currentOuterRadius = outerMaxRadius - (index * outerRadiusStep);
-            const currentInnerRadius = innerMaxRadius - (index * innerRadiusStep);
-
-            // Create outer circle button
-            createNoteButton(config, currentOuterRadius, false);
-
-            // Create inner circle button
-            createNoteButton(config, currentInnerRadius, true);
+        // Dynamically create and position each note button for both octaves
+        baseNoteConfigurations.forEach((config) => {
+            // Create button for INITIAL_OCTAVE (inner spiral)
+            createNoteButton(config, 0);
+            // Create button for INITIAL_OCTAVE + 1 (outer spiral)
+            createNoteButton(config, 1);
         });
 
-        // Create and add the SVG for the spiraling line
-        // Ensure the SVG is regenerated or updated correctly
-        let svg = document.getElementById('spiral-line-svg');
-        if (svg) {
-            svg.remove(); // Remove existing SVG if it exists to prevent issues
+        // --- Clockface Background (Slices and Radial Lines) ---
+        function drawBackgroundSlices() {
+            let backgroundSlicesSvg = document.getElementById('background-slices-svg');
+            if (backgroundSlicesSvg) {
+                backgroundSlicesSvg.remove();
+            }
+            backgroundSlicesSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            backgroundSlicesSvg.id = 'background-slices-svg';
+            backgroundSlicesSvg.setAttribute("viewBox", "0 0 100 100");
+            backgroundSlicesSvg.style.position = 'absolute';
+            backgroundSlicesSvg.style.top = '0';
+            backgroundSlicesSvg.style.left = '0';
+            backgroundSlicesSvg.style.width = '100%';
+            backgroundSlicesSvg.style.height = '100%';
+            backgroundSlicesSvg.style.zIndex = '0'; // Ensure it's behind other elements
+
+            const centerX = 50;
+            const centerY = 50;
+            const radius = 50; // Radius for drawing slices within the 100x100 viewBox
+
+            const sliceColors = ['#f0f4f8', '#ffffff']; // Light gray, then white
+
+            for (let i = 0; i < 12; i++) {
+                // Calculate angles for the slice (each slice is 30 degrees wide)
+                // The 12 o'clock slice (G# to A) is from 11:30 to 12:30.
+                // The first note A is at 1:00 (30 degrees from 12 o'clock).
+                // So, the slice from 11:30 to 12:30 corresponds to the angle range around 0 degrees.
+                // We need to adjust the starting point. Let's say 12 o'clock is 0 degrees.
+                // Then 11:30 is -15 degrees, and 12:30 is +15 degrees.
+                // The slices are indexed by i (0 to 11).
+                // Slice 0 (12 o'clock slice) is from -15 to +15 degrees.
+                // Slice 1 (1 o'clock slice) is from +15 to +45 degrees.
+                // ...
+                // Slice i starts at (i * 30 - 15) degrees and ends at (i * 30 + 15) degrees.
+
+                const sliceStartAngleDeg = (i * 30) - 15;
+                const sliceEndAngleDeg = (i * 30) + 15;
+
+                // Normalize angles to be within 0-360 for consistent SVG path drawing
+                const normalizedStartAngleDeg = (sliceStartAngleDeg + 360) % 360;
+                const normalizedEndAngleDeg = (sliceEndAngleDeg + 360) % 360;
+
+                const sliceStartAngleRad = (normalizedStartAngleDeg - 90) * Math.PI / 180;
+                const sliceEndAngleRad = (normalizedEndAngleDeg - 90) * Math.PI / 180;
+
+                // Points for the arc that forms the slice
+                const x1 = centerX + radius * Math.cos(sliceStartAngleRad);
+                const y1 = centerY + radius * Math.sin(sliceStartAngleRad);
+                const x2 = centerX + radius * Math.cos(sliceEndAngleRad);
+                const y2 = centerY + radius * Math.sin(sliceEndAngleRad);
+
+                const slicePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                slicePath.setAttribute("d", `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`);
+                slicePath.setAttribute("fill", sliceColors[i % 2]); // Alternate colors
+                backgroundSlicesSvg.appendChild(slicePath);
+
+                // Add the thin black line BETWEEN the slices (at the mid-point of each hour segment)
+                const lineAngleDeg = (i * 30) + 15; // This is the angle for the line
+                const lineAngleRad = (lineAngleDeg - 90) * Math.PI / 180;
+
+                const lineX = centerX + radius * Math.cos(lineAngleRad);
+                const lineY = centerY + radius * Math.sin(lineAngleRad);
+
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                // Apply pixel snapping to the start point of the line for better rendering
+                line.setAttribute("x1", centerX + 0.5);
+                line.setAttribute("y1", centerY + 0.5);
+                line.setAttribute("x2", lineX);
+                line.setAttribute("y2", lineY);
+                line.setAttribute("stroke", "black");
+                line.setAttribute("stroke-width", "1"); /* Explicitly 1 pixel thick */
+                backgroundSlicesSvg.appendChild(line);
+            }
+            circleContainer.prepend(backgroundSlicesSvg); // Prepend to ensure it's rendered underneath
         }
-        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.id = 'spiral-line-svg';
-        svg.setAttribute("viewBox", "0 0 100 100");
 
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("fill", "none");
-        path.setAttribute("stroke", "#a0aec0"); /* Darker gray for a more visible line */
-        path.setAttribute("stroke-width", "3"); /* Thicker line */
-        path.setAttribute("stroke-linecap", "round");
+        drawBackgroundSlices(); // Draw background on load
 
-        // Calculate points for the spiral path
-        const spiralLinePoints = [];
-        const numSpiralSegments = 360; // Number of points to draw the spiral smoothly
-        // Adjusted start/end radii for the line to be between the new button rings
-        const spiralRadiusStart = outerMinRadius + 1; // Slightly inside outer button ring
-        const spiralRadiusEnd = innerMaxRadius - 1; // Slightly outside inner button ring
+        // --- Concentric Circles ---
+        function drawConcentricCircles() {
+            let concentricCirclesSvg = document.getElementById('concentric-circles-svg');
+            if (concentricCirclesSvg) {
+                concentricCirclesSvg.remove();
+            }
+            concentricCirclesSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            concentricCirclesSvg.id = 'concentric-circles-svg';
+            concentricCirclesSvg.setAttribute("viewBox", "0 0 100 100");
+            concentricCirclesSvg.style.position = 'absolute';
+            concentricCirclesSvg.style.top = '0';
+            concentricCirclesSvg.style.left = '0';
+            concentricCirclesSvg.style.width = '100%';
+            concentricCirclesSvg.style.height = '100%';
+            concentricCirclesSvg.style.zIndex = '0.5'; // Between background slices and spiral line
+            circleContainer.appendChild(concentricCirclesSvg);
 
-        for (let i = 0; i <= numSpiralSegments; i++) {
-            const angle = (i / numSpiralSegments) * 360; // Angle from 0 to 360
-            const angleRad = (angle - 90) * Math.PI / 180; // Adjust for SVG's 0deg right, 90deg down
+            const centerX = 50;
+            const centerY = 50;
 
-            // Linearly interpolate the radius from start to end
-            const currentRadius = spiralRadiusStart - (i / numSpiralSegments) * (spiralRadiusStart - spiralRadiusEnd);
+            // Define radii for the concentric circles based on specific note positions
+            const radiiToDraw = [];
 
-            const x = 50 + currentRadius * Math.cos(angleRad);
-            const y = 50 + currentRadius * Math.sin(angleRad);
-            spiralLinePoints.push(`${x},${y}`);
+            // Helper to get a button's calculated radius
+            const getButtonRadius = (config, octaveIndex) => {
+                if (octaveIndex === 0) { // Inner octave (INITIAL_OCTAVE)
+                    return octave2MinRadius + (baseNoteConfigurations.indexOf(config) * octave2RadiusStep);
+                } else { // Outer octave (INITIAL_OCTAVE + 1)
+                    return octave3MinRadius + (baseNoteConfigurations.indexOf(config) * octave3RadiusStep);
+                }
+            };
+
+            // B2 (index 2, octave 0)
+            radiiToDraw.push(getButtonRadius(baseNoteConfigurations[2], 0));
+            // D3 (index 5, octave 0)
+            radiiToDraw.push(getButtonRadius(baseNoteConfigurations[5], 0));
+            // F3 (index 8, octave 0)
+            radiiToDraw.push(getButtonRadius(baseNoteConfigurations[8], 0));
+            // G#3 (index 11, octave 0)
+            radiiToDraw.push(getButtonRadius(baseNoteConfigurations[11], 0));
+
+            // B3 (index 2, octave 1)
+            radiiToDraw.push(getButtonRadius(baseNoteConfigurations[2], 1));
+            // D4 (index 5, octave 1)
+            radiiToDraw.push(getButtonRadius(baseNoteConfigurations[5], 1));
+            // F4 (index 8, octave 1)
+            radiiToDraw.push(getButtonRadius(baseNoteConfigurations[8], 1));
+            // G#4 (index 11, octave 1)
+            radiiToDraw.push(getButtonRadius(baseNoteConfigurations[11], 1));
+
+            radiiToDraw.forEach(r => {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", centerX);
+                circle.setAttribute("cy", centerY);
+                circle.setAttribute("r", r);
+                circle.setAttribute("fill", "none");
+                circle.setAttribute("stroke", "black");
+                circle.setAttribute("stroke-width", ".2"); /* Explicitly .2px */
+                circle.setAttribute("stroke-dasharray", ".3"); // Dotted line
+                concentricCirclesSvg.appendChild(circle);
+            });
         }
-        path.setAttribute("d", `M ${spiralLinePoints[0]} L ${spiralLinePoints.slice(1).join(' L ')}`);
-        svg.appendChild(path);
-        circleContainer.appendChild(svg);
+        drawConcentricCircles(); // Draw concentric circles on load
 
 
-        // Create the central buttons container
+        // --- Spiral Visual (Connecting Dots) ---
+        function drawSpiralLine() {
+            let spiralSvg = document.getElementById('spiral-line-svg');
+            if (spiralSvg) {
+                spiralSvg.remove();
+            }
+            spiralSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            spiralSvg.id = 'spiral-line-svg';
+            spiralSvg.setAttribute("viewBox", "0 0 100 100");
+            circleContainer.appendChild(spiralSvg);
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke", "#000000"); /* Black color for the line */
+            path.setAttribute("stroke-width", ".2"); /* Set to 0.2 for thin line */
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("stroke-linejoin", "round");
+
+            const spiralLinePoints = [];
+
+            // Iterate through each base note configuration to get the position of the dot between buttons
+            baseNoteConfigurations.forEach((config, index) => {
+                // Get positions of the two notes for the current hour
+                const fullNoteOctave2 = getFullNote(config.baseNote, INITIAL_OCTAVE);
+                const fullNoteOctave3 = getFullNote(config.baseNote, INITIAL_OCTAVE + 1);
+
+                const button2 = allNoteButtons[fullNoteOctave2];
+                const button3 = allNoteButtons[fullNoteOctave3];
+
+                if (button2 && button3) {
+                    // Get the bounding rectangles relative to the circle-container
+                    const containerRect = circleContainer.getBoundingClientRect();
+                    const button2Rect = button2.getBoundingClientRect();
+                    const button3Rect = button3.getBoundingClientRect();
+
+                    // Calculate center of each button relative to circle-container
+                    const button2X = ((button2Rect.left + button2Rect.right) / 2 - containerRect.left) / containerRect.width * 100;
+                    const button2Y = ((button2Rect.top + button2Rect.bottom) / 2 - containerRect.top) / containerRect.height * 100;
+                    const button3X = ((button3Rect.left + button3Rect.right) / 2 - containerRect.left) / containerRect.width * 100;
+                    const button3Y = ((button3Rect.top + button3Rect.bottom) / 2 - containerRect.top) / containerRect.height * 100;
+
+                    // Midpoint between the two octave buttons for the dot
+                    const midX = (button2X + button3X) / 2;
+                    const midY = (button2Y + button3Y) / 2;
+                    spiralLinePoints.push({ x: midX, y: midY });
+
+                    // Draw a small dot at this midpoint
+                    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    dot.setAttribute("cx", midX);
+                    dot.setAttribute("cy", midY);
+                    dot.setAttribute("r", "0.5"); // Small radius for the dot
+                    dot.setAttribute("fill", "black");
+                    spiralSvg.appendChild(dot);
+                }
+            });
+
+            // Draw the spiral line connecting the dots
+            if (spiralLinePoints.length > 0) {
+                let pathData = `M ${spiralLinePoints[0].x},${spiralLinePoints[0].y}`;
+                for (let i = 1; i < spiralLinePoints.length; i++) {
+                    pathData += ` L ${spiralLinePoints[i].x},${spiralLinePoints[i].y}`;
+                }
+                path.setAttribute("d", pathData);
+                spiralSvg.appendChild(path);
+            }
+        }
+
+        // Use a small delay to ensure buttons are rendered before calculating their positions for the spiral line
+        setTimeout(drawSpiralLine, 100);
+        window.addEventListener('resize', () => {
+            drawBackgroundSlices(); // Redraw slices on resize
+            drawConcentricCircles(); // Redraw concentric circles on resize
+            drawSpiralLine(); // Redraw spiral on resize
+            clearChordLines(); // Clear chord lines on resize
+        });
+
+
+        // --- Central Controls ---
         const centerButtonsContainer = document.createElement('div');
         centerButtonsContainer.id = 'center-buttons-container';
         circleContainer.appendChild(centerButtonsContainer);
 
-        // Create and add the central "Stop All" button
+        // Stop Button
         const stopButton = document.createElement('button');
         stopButton.id = 'stopButton';
-        // Add an SVG icon for the stop button (a square)
         stopButton.innerHTML = `
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="5" y="5" width="14" height="14" fill="currentColor"/>
             </svg>
         `;
         stopButton.addEventListener('click', () => {
-            currentSynth.releaseAll(); // Stop all currently playing notes
+            currentSynth.releaseAll();
             console.log("All notes stopped.");
+            clearChordLines(); // Clear chord lines when stop button is pressed
         });
         stopButton.addEventListener('touchend', (event) => {
             event.preventDefault();
             currentSynth.releaseAll();
             console.log("All notes stopped via touch.");
+            clearChordLines();
         });
         centerButtonsContainer.appendChild(stopButton);
 
-
-        // Create and add the mode toggle buttons (Piano/Electric Piano)
+        // Perc/Sust Radio Buttons
         const modeToggleDiv = document.createElement('div');
         modeToggleDiv.className = 'flex gap-2'; // Tailwind for flex and gap
         centerButtonsContainer.appendChild(modeToggleDiv);
 
-        const pianoModeButton = document.createElement('button');
-        pianoModeButton.id = 'pianoModeButton';
-        pianoModeButton.textContent = 'P'; // Changed text to 'P'
-        pianoModeButton.classList.add('mode-toggle-button');
-        pianoModeButton.classList.add('active'); // Piano is default active
-        pianoModeButton.addEventListener('click', () => {
-            if (currentMode !== 'piano') {
-                currentMode = 'piano';
+        const percModeButton = document.createElement('button');
+        percModeButton.id = 'percModeButton';
+        percModeButton.textContent = 'P';
+        percModeButton.classList.add('mode-toggle-button', 'perc', 'active');
+        percModeButton.addEventListener('click', () => {
+            if (currentMode !== 'perc') {
+                currentMode = 'perc';
                 setupSynth(currentMode);
-                pianoModeButton.classList.add('active');
-                electricPianoModeButton.classList.remove('active');
+                percModeButton.classList.add('active');
+                sustModeButton.classList.remove('active');
             }
         });
-        modeToggleDiv.appendChild(pianoModeButton);
+        modeToggleDiv.appendChild(percModeButton);
 
-        const electricPianoModeButton = document.createElement('button');
-        electricPianoModeButton.id = 'electricPianoModeButton';
-        electricPianoModeButton.textContent = 'E'; // Changed text to 'E'
-        electricPianoModeButton.classList.add('mode-toggle-button');
-        electricPianoModeButton.addEventListener('click', () => {
-            if (currentMode !== 'electric-piano') {
-                currentMode = 'electric-piano';
+        const sustModeButton = document.createElement('button');
+        sustModeButton.id = 'sustModeButton';
+        sustModeButton.textContent = 'S';
+        sustModeButton.classList.add('mode-toggle-button', 'sust');
+        sustModeButton.addEventListener('click', () => {
+            if (currentMode !== 'sust') {
+                currentMode = 'sust';
                 setupSynth(currentMode);
-                electricPianoModeButton.classList.add('active');
-                pianoModeButton.classList.remove('active');
+                sustModeButton.classList.add('active');
+                percModeButton.classList.remove('active');
             }
         });
-        modeToggleDiv.appendChild(electricPianoModeButton);
+        modeToggleDiv.appendChild(sustModeButton);
+
+        // --- Chords Functionality ---
+        const chordModeToggleButton = document.getElementById('chord-mode-toggle');
+        let chordLinesSvg; // SVG for drawing chord lines
+
+        /**
+         * Clears all chord lines from the SVG.
+         */
+        function clearChordLines() {
+            if (chordLinesSvg) {
+                while (chordLinesSvg.firstChild) {
+                    chordLinesSvg.removeChild(chordLinesSvg.firstChild);
+                }
+            }
+        }
+
+        /**
+         * Draws a line between two note buttons.
+         * @param {HTMLElement} btn1 - The first note button element.
+         * @param {HTMLElement} btn2 - The second note button element.
+         * @param {string} color - The stroke color for the line.
+         */
+        function drawLineBetweenButtons(btn1, btn2, color) {
+            if (!chordLinesSvg) {
+                chordLinesSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                chordLinesSvg.id = 'chord-lines-svg';
+                chordLinesSvg.setAttribute("viewBox", "0 0 100 100");
+                circleContainer.appendChild(chordLinesSvg);
+            }
+
+            const containerRect = circleContainer.getBoundingClientRect();
+            const btn1Rect = btn1.getBoundingClientRect();
+            const btn2Rect = btn2.getBoundingClientRect();
+
+            const x1 = ((btn1Rect.left + btn1Rect.right) / 2 - containerRect.left) / containerRect.width * 100;
+            const y1 = ((btn1Rect.top + btn1Rect.bottom) / 2 - containerRect.top) / containerRect.height * 100;
+            const x2 = ((btn2Rect.left + btn2Rect.right) / 2 - containerRect.left) / containerRect.width * 100;
+            const y2 = ((btn2Rect.top + btn2Rect.bottom) / 2 - containerRect.top) / containerRect.height * 100;
+
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", x1);
+            line.setAttribute("y1", y1);
+            line.setAttribute("x2", x2);
+            line.setAttribute("y2", y2);
+            line.setAttribute("stroke", color);
+            line.setAttribute("stroke-width", "2");
+            line.setAttribute("stroke-linecap", "round");
+            chordLinesSvg.appendChild(line);
+        }
+
+        /**
+         * Plays a chord and draws lines.
+         * @param {string} rootNote - The root note of the chord (e.g., 'C4').
+         * @param {string} type - 'major' or 'minor'.
+         */
+        function playChordAndDrawLines(rootNote, type) {
+            clearChordLines(); // Clear previous lines
+
+            const rootMidi = Tone.Midi(rootNote).toMidi();
+            let chordNotesMidi = [];
+
+            if (type === 'major') {
+                chordNotesMidi = [rootMidi, rootMidi + 4, rootMidi + 7]; // Root, Major 3rd, Perfect 5th
+            } else { // minor
+                chordNotesMidi = [rootMidi, rootMidi + 3, rootMidi + 7]; // Root, Minor 3rd, Perfect 5th
+            }
+
+            const chordNotes = chordNotesMidi.map(midi => Tone.Midi(midi).toNote());
+            const notesToPlay = [];
+            const buttonsToConnect = [];
+
+            chordNotes.forEach(note => {
+                let foundButton = allNoteButtons[note];
+                if (!foundButton) {
+                    // If note not found, try finding it in the other octave
+                    const base = note.slice(0, -1);
+                    const octave = parseInt(note.slice(-1));
+                    let alternateOctaveNote;
+
+                    if (octave === INITIAL_OCTAVE + 1) { // If original was outer, try inner
+                        alternateOctaveNote = getFullNote(base, INITIAL_OCTAVE);
+                    } else { // If original was inner, try outer
+                        alternateOctaveNote = getFullNote(base, INITIAL_OCTAVE + 1);
+                    }
+                    foundButton = allNoteButtons[alternateOctaveNote];
+                }
+                if (foundButton) {
+                    notesToPlay.push(foundButton.dataset.note);
+                    buttonsToConnect.push(foundButton);
+                } else {
+                    console.warn(`Note button not found for chord note: ${note}`);
+                }
+            });
+
+
+            // Play the notes
+            if (notesToPlay.length > 0) {
+                currentSynth.triggerAttackRelease(notesToPlay, '8n'); // Play for an 8th note duration
+            }
+
+            // Draw lines
+            if (buttonsToConnect.length >= 2) {
+                // Green line between the first two notes
+                drawLineBetweenButtons(buttonsToConnect[0], buttonsToConnect[1], 'green');
+
+                // Gray line between the last chord's note and the first chord's note on the other octave
+                if (buttonsToConnect.length >= 3) {
+                    const lastNoteButton = buttonsToConnect[buttonsToConnect.length - 1];
+                    const firstNoteButton = buttonsToConnect[0];
+
+                    // Find the first note's counterpart in the other octave
+                    const firstNoteBase = firstNoteButton.dataset.note.slice(0, -1);
+                    const firstNoteOctave = parseInt(firstNoteButton.dataset.note.slice(-1));
+                    let counterpartNote;
+
+                    if (firstNoteOctave === INITIAL_OCTAVE + 1) {
+                        counterpartNote = getFullNote(firstNoteBase, INITIAL_OCTAVE);
+                    } else {
+                        counterpartNote = getFullNote(firstNoteBase, INITIAL_OCTAVE + 1);
+                    }
+                    const counterpartButton = allNoteButtons[counterpartNote];
+
+                    if (counterpartButton) {
+                        drawLineBetweenButtons(lastNoteButton, counterpartButton, 'gray');
+                    }
+                }
+            }
+        }
+
+        // Toggle Chord Mode
+        chordModeToggleButton.addEventListener('click', () => {
+            chordModeOn = !chordModeOn;
+            chordModeToggleButton.textContent = `Chords ${chordModeOn ? 'ON' : 'OFF'}`;
+            chordModeToggleButton.classList.toggle('active', chordModeOn);
+
+            // Show/hide chord buttons
+            document.querySelectorAll('.note-button').forEach(noteButton => {
+                let majorBtn = noteButton.querySelector('.chord-button.major');
+                let minorBtn = noteButton.querySelector('.chord-button.minor');
+
+                if (chordModeOn) {
+                    if (!majorBtn) {
+                        majorBtn = document.createElement('button');
+                        majorBtn.textContent = 'M';
+                        majorBtn.classList.add('chord-button', 'major');
+                        majorBtn.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Prevent note button from playing
+                            playChordAndDrawLines(noteButton.dataset.note, 'major');
+                        });
+                        majorBtn.addEventListener('touchend', (e) => {
+                            e.stopPropagation(); // Prevent note button from playing
+                            playChordAndDrawLines(noteButton.dataset.note, 'major');
+                        });
+                        noteButton.appendChild(majorBtn);
+                    }
+                    if (!minorBtn) {
+                        minorBtn = document.createElement('button');
+                        minorBtn.textContent = 'm';
+                        minorBtn.classList.add('chord-button', 'minor');
+                        minorBtn.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Prevent note button from playing
+                            playChordAndDrawLines(noteButton.dataset.note, 'minor');
+                        });
+                        minorBtn.addEventListener('touchend', (e) => {
+                            e.stopPropagation(); // Prevent note button from playing
+                            playChordAndDrawLines(noteButton.dataset.note, 'minor');
+                        });
+                        noteButton.appendChild(minorBtn);
+                    }
+                } else {
+                    if (majorBtn) majorBtn.remove();
+                    if (minorBtn) minorBtn.remove();
+                    clearChordLines(); // Clear lines when chord mode is off
+                }
+            });
+        });
 
     </script>
 </body>
