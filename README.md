@@ -3,7 +3,7 @@ New type of musical keyboard interface
 
 The UX is responsive. 
 
-1. **Clockface background: **     
+1. **Clockface background:**     
 1.1 The background is a circle, with 12 very thin (1 px) radial lines, creating 12 "slices".     
 1.2 The radial lines are between the hours rather than on the hours.    
 1.3 The slices (between the radial lines) are alternately colored with light gray and white.     
@@ -12,15 +12,15 @@ So for example:
 The 12 ocklock slice is a slice between two lines: the left side line of this slice is on the 11:30 hour line, and the right side line is on the 12:30 hour line. All that area between these two lines is the slice. It has one color only: Gray.     
 The 1 o'clock slice is a slice between 12:30 and 1:30.  All that area in the slice is white.     
 
-2. Controls     
+2. **Controls**     
 2.1 The control section: In the center of the circle, there is a white control circle, just enough in size to contain a triangle of 3 small buttons:     
-2.2 Contol buttons    
-2.2.1 The Stop button. A small circular Red button with a square stop-playing icon in it. Pressing on it stops all sounds.    
+2.2 **Contol buttons**    
+2.2.1 The Stop button. A small circular Red button with a square stop-playing icon in it. Pressing it stops all sounds.    
 2.2.2 Two Radio Buttons with the choice of Perc or Sust.  The sustained is green, the percussive blue.    
-2.2.3 Choosing the Perc option will cause the next note-button presses to have a short piano sound that ends on its own after the time typical to hitting a piano key and releasing it.    
-2.24. Choosing the Sust option will cause the next note-button presses to continue playing a sound (perhaps oboe, or strings), until the button is released, upon which the sound will stop.     
+2.2.3 Choosing the **Perc** option will cause each note-button press to play a short piano sound. Each note ends on its own a bit after the button was pressed, regardless of whether you released the button or are still holding it down. This should be similar to pressing a real piano key.
+2.24. Choosing the **Sust** option will cause the next note-button presses to continue playing a sound (perhaps oboe, or strings), until the button is released, upon which the sound will stop.     
 
-3. Note buttons:     
+3. **Note buttons:**     
 3.1. There are 2 octaves, starting with INITIAL_OCTIVE, initially set to 2. (So we have octave 2 and octave 3).     
 3.2 There are 24 small circular note buttons, 12 in each octave.     
 3.3 Each octave starts with A, and ends with G#.     
@@ -49,7 +49,7 @@ b. The sharp notes have the octave, a dot and the hour.
     
 3.11. Sounds:  When a note button is pressed, its note is played, according to the selected control: Percussion or Sustained.     
     
-** Spiral **  A small dot is placed on the spot between each pair of buttons on the same octave (which is on the same hour).     
+**Spiral**  A small dot is placed on the spot between each pair of buttons on the same octave (which is on the same hour).     
 A thin 2px line is drawn between those dots, creating a spiral.     
     
 **Chords**.  In the top right corner, there is a Chords mode toggle button (on or off).     
