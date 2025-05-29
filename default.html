@@ -48,13 +48,13 @@
         /* Styling for each individual note button (outer and inner circles) */
         .note-button {
             position: absolute; /* Position buttons absolutely within the circle container */
-            width: 10%; /* Smaller width for buttons */
-            height: 10%; /* Smaller height for buttons */
+            width: 7%; /* Adjusted for smaller size */
+            height: 7%; /* Adjusted for smaller size */
             border-radius: 50%; /* Make buttons perfectly round */
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: clamp(0.6rem, 1.8vw, 1rem); /* Responsive font size */
+            font-size: clamp(0.5rem, 1.5vw, 0.8rem); /* Adjusted for smaller font size */
             font-weight: bold;
             color: white;
             transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
@@ -93,14 +93,6 @@
         }
         .non-whole-note:hover {
             background-color: #000000; /* Pure black on hover */
-        }
-
-        /* Specific styling for the inner circle buttons */
-        .inner-circle-button {
-            width: 7%; /* Even smaller for inner circle */
-            height: 7%;
-            font-size: clamp(0.5rem, 1.5vw, 0.8rem); /* Smaller font for inner circle */
-            z-index: 3; /* Ensure inner circle buttons are above outer ones if they overlap */
         }
 
         /* Container for the central buttons */
@@ -299,11 +291,11 @@
 
         const circleContainer = document.getElementById('circle-container');
 
-        // Define radius ranges for spiraling effect (adjusted for smaller buttons)
-        const outerMaxRadius = 40; // Max radius for the outer circle
-        const outerMinRadius = 28; // Min radius for the outer circle
-        const innerMaxRadius = 25; // Max radius for the inner circle
-        const innerMinRadius = 13; // Min radius for the inner circle
+        // Define radius ranges for spiraling effect (adjusted to move buttons further out)
+        const outerMaxRadius = 45; // Increased for further out
+        const outerMinRadius = 33; // Increased for further out
+        const innerMaxRadius = 30; // Increased for further out
+        const innerMinRadius = 18; // Increased for further out
 
         // Calculate step for radius decrease for each button
         const numButtons = buttonConfigurations.length;
@@ -337,18 +329,19 @@
             let buttonText = '';
             if (config.isWholeNote) {
                 buttonText = solfegeMap[config.baseNote];
-                button.classList.add('note-button', 'whole-note');
             } else {
                 if (hoursWithNumbers.includes(config.hour)) {
                     buttonText = String(config.hour); // Use String(config.hour) to ensure it's a string
                 }
-                button.classList.add('note-button', 'non-whole-note');
+            }
+            button.classList.add('note-button');
+            // Apply color based on whether it's a whole note or not
+            if (config.isWholeNote) {
+                button.classList.add('whole-note');
+            } else {
+                button.classList.add('non-whole-note');
             }
             button.textContent = buttonText;
-
-            if (isInnerCircle) {
-                button.classList.add('inner-circle-button');
-            }
 
             button.style.left = `${x}%`;
             button.style.top = `${y}%`;
@@ -401,21 +394,27 @@
         });
 
         // Create and add the SVG for the spiraling line
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        // Ensure the SVG is regenerated or updated correctly
+        let svg = document.getElementById('spiral-line-svg');
+        if (svg) {
+            svg.remove(); // Remove existing SVG if it exists to prevent issues
+        }
+        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.id = 'spiral-line-svg';
         svg.setAttribute("viewBox", "0 0 100 100");
 
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("fill", "none");
-        path.setAttribute("stroke", "#cbd5e0"); // Light gray color for the line
-        path.setAttribute("stroke-width", "1"); // Thin line
+        path.setAttribute("stroke", "#a0aec0"); /* Darker gray for a more visible line */
+        path.setAttribute("stroke-width", "3"); /* Thicker line */
         path.setAttribute("stroke-linecap", "round");
 
         // Calculate points for the spiral path
         const spiralLinePoints = [];
         const numSpiralSegments = 360; // Number of points to draw the spiral smoothly
-        const spiralRadiusStart = outerMinRadius + 2; // Slightly inside outer button ring
-        const spiralRadiusEnd = innerMaxRadius - 2; // Slightly outside inner button ring
+        // Adjusted start/end radii for the line to be between the new button rings
+        const spiralRadiusStart = outerMinRadius + 1; // Slightly inside outer button ring
+        const spiralRadiusEnd = innerMaxRadius - 1; // Slightly outside inner button ring
 
         for (let i = 0; i <= numSpiralSegments; i++) {
             const angle = (i / numSpiralSegments) * 360; // Angle from 0 to 360
@@ -466,7 +465,7 @@
 
         const pianoModeButton = document.createElement('button');
         pianoModeButton.id = 'pianoModeButton';
-        pianoModeButton.textContent = 'Piano';
+        pianoModeButton.textContent = 'P'; // Changed text to 'P'
         pianoModeButton.classList.add('mode-toggle-button');
         pianoModeButton.classList.add('active'); // Piano is default active
         pianoModeButton.addEventListener('click', () => {
@@ -481,7 +480,7 @@
 
         const electricPianoModeButton = document.createElement('button');
         electricPianoModeButton.id = 'electricPianoModeButton';
-        electricPianoModeButton.textContent = 'E. Piano';
+        electricPianoModeButton.textContent = 'E'; // Changed text to 'E'
         electricPianoModeButton.classList.add('mode-toggle-button');
         electricPianoModeButton.addEventListener('click', () => {
             if (currentMode !== 'electric-piano') {
