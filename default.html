@@ -19,6 +19,26 @@
             padding: 20px; /* Add some padding for smaller screens */
             box-sizing: border-box; /* Include padding in element's total width and height */
             overflow: hidden; /* Prevent scrollbars if circle slightly exceeds viewport */
+            position: relative; /* Needed for absolute positioning of the wrapper */
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Main wrapper to contain the circle and the new squares */
+        #main-interface-wrapper {
+            position: absolute;
+            inset: 0; /* Cover the entire parent (body) */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Styling for the four new black squares */
+        .outer-square {
+            position: absolute;
+            background-color: black;
+            border-radius: 0.5rem; /* Rounded corners for the squares */
+            z-index: -1; /* Ensure they are behind the main circle */
         }
 
         /* Container for the circular arrangement of buttons */
@@ -33,6 +53,7 @@
             display: flex; /* Use flex to center any internal elements if needed */
             justify-content: center;
             align-items: center;
+            z-index: 0; /* Ensure circle container is above negative z-index squares */
         }
 
         /* Styling for the background slices and lines (SVG will be injected here) */
@@ -42,7 +63,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0; /* Behind all other elements */
+            z-index: 0; /* Behind all other elements within the circle-container */
         }
 
         /* Styling for the concentric circles (SVG will be injected here) */
@@ -306,9 +327,16 @@
     </style>
 </head>
 <body>
-    <div id="circle-container">
-        <div id="center-circle-background"></div>
+    <div id="main-interface-wrapper">
+        <div id="square-12" class="outer-square"></div>
+        <div id="square-3" class="outer-square"></div>
+        <div id="square-6" class="outer-square"></div>
+        <div id="square-9" class="outer-square"></div>
+
+        <div id="circle-container">
+            <div id="center-circle-background"></div>
         </div>
+    </div>
 
     <button id="chord-mode-toggle">Chords OFF</button>
 
@@ -376,7 +404,7 @@
         // Initialize the synth with the default percussive mode
         setupSynth(currentMode);
 
-        const INITIAL_OCTAVE = 3; // MODIFIED: Starting octave for the first set of notes changed to 3
+        const INITIAL_OCTAVE = 3; // Starting octave for the first set of notes
 
         // Define the base notes and their properties
         const baseNoteConfigurations = [
@@ -462,7 +490,7 @@
             const button = document.createElement('button');
             button.id = `noteButton-${fullNote.replace('#', 's')}`; // e.g., noteButton-As2, noteButton-C3
             button.dataset.note = fullNote; // Store the full note value as a data attribute
-            button.dataset.octave = currentOctave;
+            button.dataset.octave = currentOctave; // Store the circle's octave for easy lookup
             button.dataset.isNatural = config.isNatural;
             button.dataset.hour = config.hour;
 
@@ -747,6 +775,7 @@
             drawConcentricCircles(); // Redraw concentric circles on resize
             drawSpiralLine(); // Redraw spiral on resize
             clearChordLines(); // Clear chord lines on resize
+            positionSquares(); // Reposition squares on resize
         });
 
 
@@ -910,28 +939,33 @@
 
             // Draw lines
             if (buttonsToConnect.length >= 2) {
-                // Green line between the first two notes
+                // Green line between the first two notes (root and third)
                 drawLineBetweenButtons(buttonsToConnect[0], buttonsToConnect[1], 'green');
 
-                // Gray line between the last chord's note and the first chord's note on the other octave
+                // Gray line from the third chord note to the opposite octave of the root note
                 if (buttonsToConnect.length >= 3) {
-                    const lastNoteButton = buttonsToConnect[buttonsToConnect.length - 1];
-                    const firstNoteButton = buttonsToConnect[0];
+                    const thirdChordNoteButton = buttonsToConnect[2]; // This is the third note of the chord
+                    const rootNoteButton = buttonsToConnect[0]; // This is the root note
 
-                    // Find the first note's counterpart in the other octave
-                    const firstNoteBase = firstNoteButton.dataset.note.slice(0, -1);
-                    const firstNoteOctave = parseInt(firstNoteButton.dataset.note.slice(-1));
-                    let counterpartNote;
+                    const rootNoteBase = rootNoteButton.dataset.note.slice(0, -1);
+                    // Use dataset.octave which stores the octave based on its circle (INITIAL_OCTAVE or INITIAL_OCTAVE + 1)
+                    const rootNoteCircleOctave = parseInt(rootNoteButton.dataset.octave);
 
-                    if (firstNoteOctave === INITIAL_OCTAVE + 1) {
-                        counterpartNote = getFullNote(firstNoteBase, INITIAL_OCTAVE);
-                    } else {
-                        counterpartNote = getFullNote(firstNoteBase, INITIAL_OCTAVE + 1);
+                    let counterpartNoteString;
+                    if (rootNoteCircleOctave === INITIAL_OCTAVE) { // If root was from inner circle (e.g., octave 3)
+                        // Find counterpart in outer circle (e.g., octave 4)
+                        counterpartNoteString = getFullNote(rootNoteBase, INITIAL_OCTAVE + 1);
+                    } else { // If root was from outer circle (e.g., octave 4)
+                        // Find counterpart in inner circle (e.g., octave 3)
+                        counterpartNoteString = getFullNote(rootNoteBase, INITIAL_OCTAVE);
                     }
-                    const counterpartButton = allNoteButtons[counterpartNote];
+
+                    const counterpartButton = allNoteButtons[counterpartNoteString];
 
                     if (counterpartButton) {
-                        drawLineBetweenButtons(lastNoteButton, counterpartButton, 'gray');
+                        drawLineBetweenButtons(thirdChordNoteButton, counterpartButton, 'gray');
+                    } else {
+                        console.warn(`Counterpart button not found for: ${counterpartNoteString}`);
                     }
                 }
             }
@@ -984,6 +1018,67 @@
                 }
             });
         });
+
+        /**
+         * Positions the four black squares around the main circle.
+         */
+        function positionSquares() {
+            const circleContainer = document.getElementById('circle-container');
+            const wrapper = document.getElementById('main-interface-wrapper');
+
+            if (!circleContainer || !wrapper) {
+                console.warn("Elements not found for square positioning.");
+                return;
+            }
+
+            const circleRect = circleContainer.getBoundingClientRect();
+            const wrapperRect = wrapper.getBoundingClientRect();
+
+            // Calculate center of the circle relative to the wrapper's top-left corner
+            const circleCenterX_relativeToWrapper = (circleRect.left + circleRect.width / 2) - wrapperRect.left;
+            const circleCenterY_relativeToWrapper = (circleRect.top + circleRect.height / 2) - wrapperRect.top;
+            const circleRadius = circleRect.width / 2;
+
+            // Square size: 10% of the circle container's width
+            const squareSize = circleRect.width * 0.10;
+
+            // Define how much they protrude. This is the distance from the circle's edge to the square's center.
+            // A positive value means they are outside the circle.
+            const protrusionDistance = squareSize * 0.2; // 20% of square size, adjust as needed
+
+            const squaresData = {
+                'square-12': { angleDeg: -90 }, // Top (12 o'clock)
+                'square-3': { angleDeg: 0 },    // Right (3 o'clock)
+                'square-6': { angleDeg: 90 },   // Bottom (6 o'clock)
+                'square-9': { angleDeg: 180 }   // Left (9 o'clock)
+            };
+
+            for (const id in squaresData) {
+                const squareElement = document.getElementById(id);
+                if (squareElement) {
+                    const angleRad = squaresData[id].angleDeg * Math.PI / 180;
+
+                    // Calculate the distance from the circle's center to the square's center
+                    const distanceFromCircleCenter = circleRadius + protrusionDistance;
+
+                    // Calculate the square's center position relative to the wrapper's top-left
+                    const squareCenterX_wrapper = circleCenterX_relativeToWrapper + distanceFromCircleCenter * Math.cos(angleRad);
+                    const squareCenterY_wrapper = circleCenterY_relativeToWrapper + distanceFromCircleCenter * Math.sin(angleRad);
+
+                    // Set styles, using transform(-50%, -50%) to center the square on its calculated point
+                    squareElement.style.width = `${squareSize}px`;
+                    squareElement.style.height = `${squareSize}px`;
+                    squareElement.style.left = `${squareCenterX_wrapper}px`;
+                    squareElement.style.top = `${squareCenterY_wrapper}px`;
+                    squareElement.style.transform = `translate(-50%, -50%)`;
+                }
+            }
+        }
+
+        // Call on load and resize
+        window.addEventListener('load', positionSquares);
+        // Also call it after a small timeout to ensure all elements are rendered and sized
+        setTimeout(positionSquares, 500);
 
     </script>
 </body>
