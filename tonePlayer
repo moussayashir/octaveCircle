@@ -1,0 +1,78 @@
+/*
+move this to readme.
+
+Change it. Ditch the old code. And now: 
+
+
+
+a. add a Multiline textbox, and a play button. 
+
+Shift enter is line down in textbox. Enter presses play button. 
+
+
+
+b. each command ends with a period. 
+
+
+
+c. on play parse the text as follows.
+
+
+
+1. first comes the octave:  oct 3.  or oct 4.  etc.   (where to start the numbers with A in that octave). 
+
+
+
+2. bpm for setting the beat rate: example bpm 120. 
+
+
+
+3. the notes are entered as numbers. The number 1 is A3. every subsequent number is the next half note up.  a minus before the number brings the octave down. 
+
+
+
+4. a period is 16th length. 
+
+two periods or a comma is an 8th. 
+
+a dash or a space is a quarer. 
+
+a double dash is a half note. 
+
+four dashes or plus is whole note.  
+
+
+
+example for three blind mice: 
+
+
+
+oct 3. bpm 90. 
+
+8 6 4-- 8 6 4 -
+
+11 9 8 - 11,11 9 8-, 11,
+
+16--  15 13 15 16 
+
+11, 11-- 
+
+11,
+
+16--  15 13 15 16 
+
+11, 11-- 
+
+
+
+for making it 3 eighths, instead of the musical notation with a dot I simply add 3 commas or a period followed by a comma. For 3 quarters I add a 
+
+
+
+(not yet in this version:  
+
+1. tri before a note means the next three are  a trio. 
+
+2. a directive can come before a section where the section is in square brackets.)
+*/
+
